@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoftWorkspace 통합 포털</title>
+    <!-- Pretendard Font -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        /* =========================================================
+           Desktop Environment & Module Layout
+           ========================================================= */
+        :root {
+            --c-bg: #F4F7FC; 
+            --c-panel: #FFFFFF;
+            --c-text: #2D3748;
+            --c-text-muted: #718096;
+            --c-border: #E2E8F0;
+            --c-primary: #3B82F6;
+            --c-primary-hover: #2563EB;
+        }
+
+        body, * { font-family: 'Pretendard', 'Segoe UI', sans-serif; color: var(--c-text); box-sizing: border-box; }
+        body { margin: 0; padding: 0; overflow: hidden; }
+        
+        /* 1. 가상의 데스크톱 바탕화면 */
+        .os-desktop {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            width: 100vw;
+            background: linear-gradient(135deg, #e0e7ff 0%, #cbd5e1 100%);
+            padding: 40px;
+        }
+
+        /* 2. 중앙 모듈 화면 (1024x640) */
+        .workspace { 
+            display: flex; 
+            width: 1024px;
+            max-width: 95vw;
+            height: 640px;
+            max-height: 90vh;
+            background: var(--c-bg); 
+            overflow: hidden; 
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25), inset 0 0 0 1px rgba(255,255,255,0.6);
+            position: relative;
+        }
+
+        /* 내부 레이아웃 */
+        .sidebar { width: 340px; background: var(--c-panel); border-right: 1px solid var(--c-border); display: flex; flex-direction: column; z-index: 10; box-shadow: 4px 0 24px rgba(0,0,0,0.02); }
+        /* 수정됨: 여백을 최적화하여 스크롤 발생 방지 */
+        .main-area { flex: 1; padding: 24px 32px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+        
+        /* 애니메이션 */
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .spin { animation: spin 1s linear infinite; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        /* Login UI & Badges */
+        .login-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 40px; }
+        
+        .login-header-info { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 32px; font-size: 12px; font-weight: bold; color: var(--c-text-muted); }
+        .pc-badge { display: flex; align-items: center; gap: 6px; background: #F1F5F9; color: #475569; padding: 6px 12px; border-radius: 20px; border: 1px solid #E2E8F0; font-size: 11px; }
+        
+        .brand-title { font-size: 32px; font-weight: 900; letter-spacing: -1px; line-height: 1.1; margin-bottom: 4px; }
+        .brand-sub { font-size: 13px; font-weight: 700; color: var(--c-primary); margin-bottom: 32px; }
+        
+        .login-input-group { position: relative; margin-bottom: 10px; }
+        .login-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #A0AEC0; width: 16px; height: 16px;}
+        .login-input { width: 100%; height: 44px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 0 16px 0 40px; font-size: 13px; font-weight: 500; outline: none; transition: all 0.2s; }
+        .login-input:focus { background: #FFFFFF; border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); }
+        .btn-login { width: 100%; height: 44px; background: var(--c-primary); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 10px rgba(59,130,246,0.25); margin-top: 8px; }
+        .btn-login:hover { background: var(--c-primary-hover); transform: translateY(-1px); box-shadow: 0 6px 14px rgba(59,130,246,0.3); }
+        
+        .footer-links { display: flex; justify-content: space-between; padding: 20px 36px; border-top: 1px solid var(--c-border); background: #FAFAFA; }
+        .f-link { font-size: 11px; font-weight: 600; color: var(--c-text-muted); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+        .f-link:hover { color: var(--c-text); }
+
+        /* Dashboard Header & Time */
+        /* 수정됨: 여백을 좁힘 */
+        .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
+        .time-badge { background: white; padding: 8px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; text-align: right; }
+
+        /* Dashboard Cards */
+        /* 수정됨: 패딩과 여백을 좁혀 한 화면에 렌더링되게 함 */
+        .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 0; margin-bottom: 16px; flex-shrink: 0; }
+        .app-card { background: white; border-radius: 16px; padding: 16px; cursor: pointer; border: 1px solid var(--c-border); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; }
+        .app-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); border-color: #CBD5E1; }
+        .app-icon-wrap { width: 36px; height: 36px; border-radius: 10px; background: #F8FAFC; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: transform 0.3s; }
+        .app-card:hover .app-icon-wrap { transform: scale(1.1); }
+        .app-card:hover .app-title { color: var(--c-primary); }
+        .app-title { font-size: 14px; font-weight: 800; margin-bottom: 2px; transition: color 0.2s; }
+        .app-desc { font-size: 11px; color: var(--c-text-muted); line-height: 1.3; }
+        .app-chevron { position: absolute; right: 16px; bottom: 16px; color: #CBD5E1; opacity: 0; transition: all 0.3s; transform: translateX(8px); }
+        .app-card:hover .app-chevron { opacity: 1; color: var(--c-primary); transform: translateX(0); }
+
+        /* Settings Modal Structural Classes */
+        /* 수정됨: 사이드바 및 콘텐츠 여백 안정화 */
+        .settings-sidebar { width: 220px; background: white; border-right: 1px solid var(--c-border); display: flex; flex-direction: column; padding: 16px; gap: 4px; overflow-y: auto; flex-shrink: 0; }
+        .sidebar-heading { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 8px; }
+        .sidebar-heading:first-child { margin-top: 4px; }
+        .settings-content-area { flex: 1; display: flex; flex-direction: column; padding: 24px 32px; overflow: hidden; background: #F8FAFC; }
+
+        /* Modern Settings UI */
+        .side-nav-item { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; color: var(--c-text-muted); text-align: left; }
+        .side-nav-item:hover { background: #F8FAFC; color: var(--c-text); }
+        .side-nav-item.active { background: #EFF6FF; color: var(--c-primary); }
+        .side-nav-item.active .nav-icon { background: #DBEAFE; color: var(--c-primary); }
+        .nav-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: #F1F5F9; color: #64748B; flex-shrink: 0;}
+        
+        .modern-tabs { display: flex; gap: 4px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0; flex-shrink: 0; }
+        .modern-tab { padding: 8px 14px; background: none; border: none; font-size: 13px; font-weight: 700; color: #94A3B8; cursor: pointer; position: relative; transition: color 0.2s; }
+        .modern-tab:hover { color: var(--c-text); }
+        .modern-tab.active { color: var(--c-primary); }
+        .modern-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--c-primary); border-radius: 3px 3px 0 0; }
+        
+        .pill-tab { padding: 6px 14px; background: transparent; border: 1px solid transparent; border-radius: 100px; font-size: 12px; font-weight: 600; color: var(--c-text-muted); cursor: pointer; transition: all 0.2s; }
+        .pill-tab:hover { background: #E2E8F0; }
+        .pill-tab.active { background: white; border-color: #CBD5E1; color: var(--c-text); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+
+        .modern-card { background: white; border: 1px solid var(--c-border); border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .card-title { font-size: 14px; font-weight: 800; margin-bottom: 16px; color: var(--c-text); padding-bottom: 10px; border-bottom: 1px dashed var(--c-border); display: flex; align-items: center; gap: 8px; }
+        
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+        .modern-input { width: 100%; height: 36px; padding: 0 12px; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 13px; outline: none; transition: all 0.2s; background: white; }
+        .modern-input:focus { border-color: var(--c-primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        
+        .modern-btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: var(--c-primary); color: white; padding: 0 20px; height: 40px; border-radius: 8px; font-weight: 700; font-size: 13px; border: none; cursor: pointer; transition: all 0.2s; }
+        .modern-btn-primary:hover { background: var(--c-primary-hover); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
+        .modern-btn-outline { display: inline-flex; align-items: center; justify-content: center; gap: 6px; background: white; color: var(--c-text); padding: 0 16px; height: 38px; border-radius: 8px; font-weight: 600; font-size: 13px; border: 1px solid #CBD5E1; cursor: pointer; transition: all 0.2s; }
+        .modern-btn-outline:hover { background: #F8FAFC; border-color: #94A3B8; }
+
+        .checkbox-label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; }
+        .checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--c-primary); cursor: pointer; border-radius: 4px; }
+        
+        .radio-label { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; cursor: pointer; }
+        .radio-label input[type="radio"] { width: 16px; height: 16px; accent-color: var(--c-primary); cursor: pointer; }
+
+        .radio-card { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border: 1px solid #CBD5E1; border-radius: 10px; cursor: pointer; background: white; font-weight: 600; font-size: 13px; transition: all 0.2s; flex: 1; }
+        .radio-card:hover { border-color: #94A3B8; background: #F8FAFC; }
+        .radio-card.active { border-color: var(--c-primary); background: #EFF6FF; color: var(--c-primary); }
+        .radio-circle { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #CBD5E1; position: relative; }
+        .radio-card.active .radio-circle { border-color: var(--c-primary); }
+        .radio-card.active .radio-circle::after { content: ''; position: absolute; inset: 3px; background: var(--c-primary); border-radius: 50%; }
+
+        /* 수정됨: 여백 최적화로 공간 절약 */
+        .modern-table { width: 100%; border-collapse: collapse; }
+        .modern-table th { background: #F8FAFC; padding: 8px 12px; text-align: left; font-size: 12px; font-weight: 700; color: #64748B; border-bottom: 1px solid #E2E8F0; }
+        .modern-table td { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; font-size: 12px; }
+        .modern-table tr:hover td { background: #F8FAFC; }
+
+        /* Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+        /* Utility Classes */
+        .hidden { display: none !important; }
+        .flex { display: flex; } .flex-col { flex-direction: column; } .flex-1 { flex: 1; }
+        .items-center { align-items: center; } .items-end { align-items: flex-end; } .justify-center { justify-content: center; } .justify-between { justify-content: space-between; } .justify-end { justify-content: flex-end; }
+        .absolute { position: absolute; } .relative { position: relative; } .fixed { position: fixed; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .z-50 { z-index: 50; } .z-10 { z-index: 10; }
+        .bg-white { background-color: #FFFFFF; } .bg-slate-50 { background-color: #F8FAFC; } .bg-transparent { background-color: transparent; }
+        .p-4 { padding: 16px; } .p-5 { padding: 20px; } .p-6 { padding: 24px; } .px-5 { padding-left: 20px; padding-right: 20px; } .py-3 { padding-top: 12px; padding-bottom: 12px; }
+        .m-0 { margin: 0 !important; } .mt-4 { margin-top: 16px; } .mb-4 { margin-bottom: 16px; }
+        .w-full { width: 100%; } .h-full { height: 100%; }
+        .overflow-hidden { overflow: hidden; } .overflow-y-auto { overflow-y: auto; }
+        .rounded-2xl { border-radius: 16px; } .rounded-xl { border-radius: 12px;} .rounded-lg { border-radius: 8px;}
+        .border-r { border-right: 1px solid var(--c-border); } .border-b { border-bottom: 1px solid var(--c-border); } .border-t { border-top: 1px solid var(--c-border); } .border { border: 1px solid var(--c-border); } .border-none { border: none; }
+        .text-center { text-align: center; } .text-right { text-align: right; }
+        .gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+        
+        .text-blue-500 { color: #3B82F6; } .text-blue-600 { color: #2563EB; } .text-emerald-500 { color: #10B981; } .text-emerald-700 { color: #047857;} .text-indigo-500 { color: #6366F1; } .text-rose-500 { color: #F43F5E; } .text-rose-700 { color: #BE123C; } .text-amber-500 { color: #F59E0B; } .text-amber-600 { color: #D97706;} .text-teal-500 { color: #14B8A6; }
+        .bg-blue-50 { background-color: #EFF6FF; } .bg-blue-100 { background-color: #DBEAFE; } .bg-slate-100 { background-color: #F1F5F9; } .bg-emerald-50 { background-color: #ECFDF5; } .bg-emerald-100 { background-color: #D1FAE5; } .bg-rose-50 { background-color: #FFF1F2; } .bg-rose-100 { background-color: #FFE4E6; } .bg-amber-100 { background-color: #FEF3C7; }
+        .text-slate-400 { color: #94A3B8; } .text-slate-500 { color: #64748B; } .text-slate-600 { color: #475569; } .text-slate-700 { color: #334155; } .text-slate-800 { color: #1E293B; }
+        .font-bold { font-weight: 700; } .font-semibold { font-weight: 600; } .font-extrabold { font-weight: 800; }
+        .shadow-2xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); } .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); } .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .shrink-0 { flex-shrink: 0; }
+        .bg-slate-900-40 { background-color: rgba(15, 23, 42, 0.4); } .backdrop-blur-sm { backdrop-filter: blur(4px); }
+        .outline-none { outline: none; }
+    </style>
+</head>
+<body>
+
+<div class="os-desktop">
+    <div class="workspace">
+        
+        <!-- Left Sidebar (Login/Profile) -->
+        <div class="sidebar">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-4 pb-2 shrink-0" style="padding: 24px 24px 8px 24px;">
+                <div class="flex items-center gap-2">
+                    <div class="bg-blue-600 p-2 rounded-lg text-white shadow-md" style="background-color: var(--c-primary);"><i data-lucide="shield-check" style="width:18px;height:18px;"></i></div>
+                    <span class="font-extrabold text-slate-800" style="font-size: 16px; letter-spacing: -0.5px;">SoftWorkspace</span>
+                </div>
+                <button class="text-slate-400 hover-bg-slate p-1.5 rounded-md cursor-pointer border-none bg-transparent" id="btn-open-settings" style="transition: background-color 0.2s;">
+                    <i data-lucide="settings" style="width:18px;height:18px;"></i>
+                </button>
+            </div>
+
+            <!-- Login View -->
+            <div id="login-view" class="flex flex-col h-full fade-in">
+                <div class="login-hero">
+                    <div class="login-header-info">
+                        <div class="flex items-center gap-2">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-primary);" class="pulse"></div>
+                            <span>Ver 26.03.17.02</span>
+                        </div>
+                        <div class="pc-badge">
+                            <i data-lucide="monitor" style="width:14px;height:14px;"></i> 등록PC명: 노영은pc
+                        </div>
+                    </div>
+                    
+                    <div class="brand-title">SOFT<span class="text-blue-600">WORKSPACE</span></div>
+                    <div class="brand-sub">병원 통합 업무 플랫폼</div>
+
+                    <form id="login-form" style="margin-top: 8px;">
+                        <div class="login-input-group">
+                            <i data-lucide="user" class="login-icon"></i>
+                            <input type="text" class="login-input" id="login-id" placeholder="사번 또는 아이디" required />
+                        </div>
+                        <div class="login-input-group">
+                            <i data-lucide="lock" class="login-icon"></i>
+                            <input type="password" class="login-input" id="login-pw" placeholder="비밀번호" required />
+                        </div>
+                        
+                        <div class="flex items-center justify-between px-1 mt-3 mb-5">
+                            <label class="checkbox-label" style="font-size: 11px;"><input type="checkbox" style="width:12px;height:12px;" /> 아이디 저장</label>
+                            <button type="button" class="font-bold text-slate-400 bg-transparent border-none cursor-pointer" style="font-size: 11px;">비밀번호 찾기</button>
+                        </div>
+                        
+                        <button type="submit" class="btn-login" id="btn-login-submit">
+                            <!-- 수정됨: 시스템 로그인 텍스트 명시적 화이트 색상 적용 -->
+                            <span id="login-btn-text" style="color: #ffffff !important;">시스템 로그인</span>
+                            <!-- 로딩스피너 화이트 색상 적용 -->
+                            <i data-lucide="loader-2" class="spin hidden" id="login-btn-loader" style="width:18px;height:18px; color: #ffffff;"></i>
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="footer-links">
+                    <button class="f-link"><i data-lucide="help-circle" style="width:12px;height:12px;"></i> 매뉴얼</button>
+                    <button class="f-link"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> 업데이트 내역</button>
+                    <button class="f-link"><i data-lucide="shopping-cart" style="width:12px;height:12px;"></i> 고객지원</button>
+                </div>
+            </div>
+
+            <!-- Profile View (Hidden initially) -->
+            <div id="profile-view" class="flex flex-col items-center justify-center h-full p-6 fade-in hidden">
+                <div class="bg-blue-50 shadow-lg rounded-lg flex items-center justify-center mb-4" style="width:80px;height:80px; border-radius:50%; border:3px solid white;">
+                    <i data-lucide="user" class="text-blue-600" style="width:32px;height:32px;"></i>
+                </div>
+                <h2 id="profile-name" class="font-extrabold mb-1" style="font-size: 20px;">-</h2>
+                <p class="font-semibold text-slate-500 mb-6 bg-slate-100 border border-slate-200" style="font-size: 12px; padding: 4px 12px; border-radius: 20px;">내과 담당 데스크</p>
+                
+                <button id="btn-logout" class="modern-btn-outline w-full" style="max-width: 200px; color: var(--text-rose-500); border-color: #FECDD3; background: #FFF1F2;">
+                    <i data-lucide="log-out" style="width:14px;height:14px;"></i> 업무 종료 (로그아웃)
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Dashboard Area -->
+        <div class="main-area relative flex flex-col">
+            <header class="dashboard-header">
+                <div>
+                    <h1 class="font-extrabold tracking-tight mb-1" style="font-size: 24px;">대시보드</h1>
+                    <p class="text-slate-500 font-semibold" style="font-size: 12px;">원하는 모듈을 클릭하여 즉시 업무를 시작하세요. (SSO 적용)</p>
+                </div>
+                <div class="time-badge">
+                    <div class="font-bold text-slate-400 mb-1" style="font-size: 10px;">현재 시각</div>
+                    <div id="current-time" class="font-extrabold text-slate-700 tracking-tight" style="font-size: 16px;">00:00 AM</div>
+                </div>
+            </header>
+
+            <div class="flex-1 flex flex-col overflow-y-auto custom-scrollbar pr-2">
+                <!-- Apps Grid -->
+                <div class="fade-in shrink-0">
+                    <div class="app-grid">
+                        <!-- App Cards -->
+                        <div class="app-card group" onclick="launchApp('SoftCRM')">
+                            <div class="app-icon-wrap"><i data-lucide="user" class="text-blue-500"></i></div>
+                            <h3 class="app-title">SoftCRM</h3>
+                            <p class="app-desc">고객 관계 및 이력 관리</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                        <div class="app-card group" onclick="launchApp('SoftCTI')">
+                            <div class="app-icon-wrap"><i data-lucide="phone" class="text-emerald-500"></i></div>
+                            <h3 class="app-title">SoftCTI</h3>
+                            <p class="app-desc">스마트 콜센터 통합</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                        <div class="app-card group" onclick="launchApp('SoftFront')">
+                            <div class="app-icon-wrap"><i data-lucide="monitor" class="text-indigo-500"></i></div>
+                            <h3 class="app-title">SoftFront</h3>
+                            <p class="app-desc">프론트 데스크 접수</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                        <div class="app-card group" onclick="launchApp('SoftPosition')">
+                            <div class="app-icon-wrap"><i data-lucide="map-pin" class="text-rose-500"></i></div>
+                            <h3 class="app-title">SoftPosition</h3>
+                            <p class="app-desc">실시간 관제 및 배차</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                        <div class="app-card group" onclick="launchApp('SoftTelemanager')">
+                            <div class="app-icon-wrap"><i data-lucide="headphones" class="text-amber-500"></i></div>
+                            <h3 class="app-title">SoftTelemanager</h3>
+                            <p class="app-desc">아웃바운드 텔레마케팅</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                        <div class="app-card group" onclick="launchApp('SoftTrace')">
+                            <div class="app-icon-wrap"><i data-lucide="activity" class="text-teal-500"></i></div>
+                            <h3 class="app-title">SoftTrace</h3>
+                            <p class="app-desc">시스템 로그 추적</p>
+                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notices -->
+                <div class="fade-in mt-auto pt-4 border-t border-slate-200 shrink-0">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="bg-amber-100 p-1.5 rounded-lg"><i data-lucide="bell" class="text-amber-600" style="width:14px;height:14px;"></i></div>
+                        <h3 class="font-bold" style="font-size: 15px;">시스템 공지사항</h3>
+                    </div>
+                    <div class="bg-white border border-slate-200 overflow-hidden shadow-sm" style="border-radius:12px;">
+                        <table class="modern-table">
+                            <tbody>
+                                <tr class="cursor-pointer">
+                                    <td class="text-center" style="width:60px;"><span class="bg-blue-100 text-blue-700 px-1 py-0.5 rounded font-bold" style="font-size:10px;">공지</span></td>
+                                    <td class="font-bold text-slate-700" style="font-size: 12px;">통합 런처(SoftWorkspace) 오픈 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px;">NEW</span></td>
+                                    <td class="text-right font-semibold text-slate-400" style="font-size: 12px; width:80px;">26.03.17</td>
+                                </tr>
+                                <tr class="cursor-pointer">
+                                    <td class="text-center"><span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold" style="font-size:10px;">업데이트</span></td>
+                                    <td class="font-bold text-slate-700" style="font-size: 12px;">SoftCRM v3.0 속도 개선 패치 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px;">NEW</span></td>
+                                    <td class="text-right font-semibold text-slate-400" style="font-size: 12px;">26.03.16</td>
+                                </tr>
+                                <tr class="cursor-pointer">
+                                    <td class="text-center"><span class="bg-rose-100 text-rose-700 px-1 py-0.5 rounded font-bold" style="font-size:10px;">점검</span></td>
+                                    <td class="font-bold text-slate-700" style="font-size: 12px;">주말 정기 점검 (3/21 02:00)</td>
+                                    <td class="text-right font-semibold text-slate-400" style="font-size: 12px;">26.03.10</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Launch Overlay (Hidden) -->
+            <div id="launch-overlay" class="absolute inset-0 bg-white fade-in hidden flex-col items-center justify-center z-10" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); border-radius: 16px;">
+                <i data-lucide="loader-2" class="spin text-blue-600 mb-2" style="width:32px;height:32px;"></i>
+                <span class="font-bold text-slate-800" style="font-size: 16px;">연결 중</span>
+                <span id="launch-app-name" class="font-semibold text-slate-500 mt-1" style="font-size: 12px;"></span>
+            </div>
+
+            <!-- Login Warning Overlay (Hidden) -->
+            <div id="login-warning" class="absolute inset-0 z-50 bg-slate-900-40 backdrop-blur-sm flex items-center justify-center fade-in hidden" style="border-radius: 0 20px 20px 0;">
+                <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4 text-center border border-rose-100" style="max-width: 280px;">
+                    <div class="bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mb-1" style="width:56px;height:56px;">
+                        <i data-lucide="lock" style="width:28px;height:28px;"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800" style="font-size: 17px;">로그인이 필요합니다</h3>
+                        <p class="text-slate-500 mt-2" style="font-size: 12px; line-height: 1.5;">모듈을 실행하려면 좌측 폼에서<br/>먼저 시스템에 로그인해주세요.</p>
+                    </div>
+                    <button class="modern-btn-primary w-full mt-2" style="background: var(--c-danger);" onclick="closeWarning()">
+                        <span style="color: #ffffff;">확인</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===================== Settings Modal ===================== -->
+        <div id="settings-modal" class="absolute inset-0 bg-slate-900-40 backdrop-blur-sm flex items-center justify-center z-50 p-4 fade-in hidden" style="border-radius: 20px;">
+            <!-- 수정됨: 모달창 높이와 너비를 키워 여백을 넉넉하게 확보 -->
+            <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200" style="width: 960px; height: 620px;">
+                
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between bg-white border-b border-slate-100 shrink-0" style="padding: 16px 24px;">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-slate-100 p-1.5 rounded-md text-slate-700"><i data-lucide="settings" style="width:18px;height:18px;"></i></div>
+                        <h2 class="font-bold text-slate-800" style="font-size: 16px;">통합 시스템 설정</h2>
+                    </div>
+                    <button class="text-slate-400 bg-transparent border-none cursor-pointer hover:text-rose-500 transition-colors" onclick="toggleSettings(false)"><i data-lucide="x" style="width:20px;height:20px;"></i></button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="flex flex-1 overflow-hidden bg-slate-50">
+                    
+                    <!-- Left Settings Nav -->
+                    <div class="settings-sidebar">
+                        <div class="sidebar-heading">글로벌</div>
+                        <button class="side-nav-item active" onclick="switchSettingTab('common', this)">
+                            <div class="nav-icon bg-blue-100 text-blue-600"><i data-lucide="server" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">공통 환경설정</span>
+                        </button>
+                        
+                        <div class="sidebar-heading" style="margin-top: 16px;">개별 모듈</div>
+                        <button class="side-nav-item" onclick="switchSettingTab('crm', this)">
+                            <div class="nav-icon"><i data-lucide="user" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftCRM</span>
+                        </button>
+                        <button class="side-nav-item" onclick="switchSettingTab('cti', this)">
+                            <div class="nav-icon"><i data-lucide="phone" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftCTI</span>
+                        </button>
+                        <button class="side-nav-item" onclick="switchSettingTab('front', this)">
+                            <div class="nav-icon"><i data-lucide="monitor" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftFront</span>
+                        </button>
+                        <button class="side-nav-item" onclick="switchSettingTab('position', this)">
+                            <div class="nav-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftPosition</span>
+                        </button>
+                        <button class="side-nav-item" onclick="switchSettingTab('tele', this)">
+                            <div class="nav-icon"><i data-lucide="headphones" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftTelemanager</span>
+                        </button>
+                        <button class="side-nav-item" onclick="switchSettingTab('trace', this)">
+                            <div class="nav-icon"><i data-lucide="activity" style="width:14px;height:14px;"></i></div>
+                            <span class="font-semibold" style="font-size: 12px;">SoftTrace</span>
+                        </button>
+                    </div>
+
+                    <!-- Right Settings Content -->
+                    <div class="settings-content-area">
+                        <div class="flex items-center gap-2 mb-4 shrink-0">
+                            <h3 id="setting-content-title" class="font-extrabold text-slate-800" style="font-size: 20px;">공통 환경설정</h3>
+                            <span id="setting-content-badge" class="bg-slate-200 text-slate-600 rounded font-semibold hidden" style="font-size: 10px; padding: 2px 6px;">모듈 전용</span>
+                        </div>
+                        
+                        <div class="flex-1 overflow-hidden relative">
+                            
+                            <!-- Tab: Common -->
+                            <div id="tab-common" class="setting-panel fade-in h-full overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-4">
+                                <div class="modern-card">
+                                    <div class="flex items-center gap-2 mb-3">
+                                        <div class="bg-blue-100 p-1.5 rounded-md"><i data-lucide="database" class="text-blue-600" style="width:16px;height:16px;"></i></div>
+                                        <h4 class="font-bold text-slate-800" style="font-size: 14px;">통합 데이터베이스 연결</h4>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                        <div class="form-group m-0"><label>IP Address <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="192.168.0.100" /></div>
+                                        <div class="form-group m-0"><label>Port <span class="text-rose-500">*</span></label><div class="flex gap-1"><input type="text" class="modern-input flex-1" value="24680" /><button class="modern-btn-outline px-2 text-xs">기본</button></div></div>
+                                        <div class="form-group m-0"><label>DB Name <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="SoftCRM_Vryus" /></div>
+                                        <div class="form-group m-0"><label>User ID <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="sungmin" /></div>
+                                        <div class="form-group m-0 col-span-2"><label>Password <span class="text-rose-500">*</span></label><input type="password" class="modern-input" value="********" /></div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="mb-2 text-xs">DBMS 엔진 타입</label>
+                                        <div class="flex gap-3">
+                                            <label class="radio-card active" onclick="toggleRadioCard(this, 'db_type')"><input type="radio" name="db_type" checked class="hidden"/> <div class="radio-circle"></div> MySQL</label>
+                                            <label class="radio-card" onclick="toggleRadioCard(this, 'db_type')"><input type="radio" name="db_type" class="hidden"/> <div class="radio-circle"></div> MS SQL</label>
+                                        </div>
+                                    </div>
+                                    <div class="flex justify-end mt-3 pt-3 border-t border-slate-100">
+                                        <button class="modern-btn-primary" style="background:var(--c-text); color:white;"><i data-lucide="server" style="width:14px;height:14px; color:white;"></i> <span style="color:white;">연결 테스트</span></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftCRM -->
+                            <div id="tab-crm" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'crm-1')">기본설정</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'crm-2')">신용카드</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'crm-3')">기타설정</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="crm-1" class="sub-panel grid-2">
+                                        <div class="modern-card">
+                                            <h4 class="card-title">포트 통신 설정</h4>
+                                            <div class="form-group"><label>메세지센터 IP</label><input type="text" class="modern-input" placeholder="192.168.0.1" /></div>
+                                            <div class="grid-2">
+                                                <div class="form-group"><label>SoftCRM 포트</label><input type="text" class="modern-input" value="15002"/></div>
+                                                <div class="form-group"><label>EMR 포트</label><input type="text" class="modern-input" /></div>
+                                            </div>
+                                        </div>
+                                        <div class="modern-card">
+                                            <h4 class="card-title">외부 장비 연동</h4>
+                                            <div class="grid-2">
+                                                <div class="form-group"><label>RF포트</label><select class="modern-input"><option>COM1</option></select></div>
+                                                <div class="form-group"><label>바코드포트</label><select class="modern-input"><option>미사용</option></select></div>
+                                                <div class="form-group"><label>프린터</label><select class="modern-input"><option>기본프린터</option></select></div>
+                                                <div class="form-group"><label>프린터포트</label><select class="modern-input"><option>USB</option></select></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="crm-2" class="sub-panel hidden modern-card p-0 flex flex-col h-full">
+                                        <div class="bg-slate-50 border-b border-slate-100 flex p-2 gap-2 shrink-0">
+                                            <button class="pill-tab active">KOCES</button>
+                                            <button class="pill-tab">FirstData</button>
+                                        </div>
+                                        <div class="p-4 grid-2 bg-white flex-1">
+                                            <div>
+                                                <h5 class="text-xs font-bold text-slate-700 mb-3">사업장 정보</h5>
+                                                <div class="form-group"><label>사업자번호</label><input type="text" class="modern-input" /></div>
+                                                <div class="form-group"><label>요양기관번호</label><input type="text" class="modern-input" /></div>
+                                            </div>
+                                            <div>
+                                                <h5 class="text-xs font-bold text-slate-700 mb-3">단말기 세팅</h5>
+                                                <div class="grid-2">
+                                                    <div class="form-group"><label>운영 모드</label><select class="modern-input"><option>일반</option></select></div>
+                                                    <div class="form-group"><label>포트 번호</label><select class="modern-input"><option>COM3</option></select></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="crm-3" class="sub-panel hidden grid-2">
+                                        <div class="modern-card">
+                                            <h4 class="card-title">예약 및 디스플레이</h4>
+                                            <div class="grid-2">
+                                                <div class="form-group"><label>UI 폰트</label><select class="modern-input"><option>Pretendard</option></select></div>
+                                                <div class="form-group"><label>폰트 크기</label><select class="modern-input"><option>보통</option></select></div>
+                                            </div>
+                                            <label class="checkbox-label mt-2"><input type="checkbox" checked /> 예약창 클릭 시 상세정보</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftCTI -->
+                            <div id="tab-cti" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'cti-1')">일반 옵션</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'cti-2')">PBX 연동</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="cti-1" class="sub-panel flex flex-col gap-4">
+                                        <div class="modern-card">
+                                            <h4 class="card-title">콜센터 PBX 장비 선택</h4>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <label class="radio-label bg-slate-50 p-2.5 rounded-lg"><input type="radio" name="pbx"/> UNICN</label>
+                                                <label class="radio-label bg-slate-50 p-2.5 rounded-lg"><input type="radio" name="pbx"/> LGUPlus (Centrex)</label>
+                                                <label class="radio-label bg-slate-50 p-2.5 rounded-lg"><input type="radio" name="pbx" checked/> LGUPlus (DCS)</label>
+                                                <label class="radio-label bg-slate-50 p-2.5 rounded-lg"><input type="radio" name="pbx"/> 장비없음</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="cti-2" class="sub-panel hidden modern-card">
+                                        <h4 class="card-title">LGUPlus PBX 정보</h4>
+                                        <div class="flex flex-col gap-3">
+                                            <div class="form-group"><label>서버 IP 주소</label><input type="text" class="modern-input" value="210.121.223.75" /></div>
+                                            <div class="grid-2">
+                                                <div class="form-group"><label>연동 아이디</label><input type="text" class="modern-input" value="205" /></div>
+                                                <div class="form-group"><label>비밀번호</label><input type="password" class="modern-input" value="********" /></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftFront -->
+                            <div id="tab-front" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'front-1')">기본 및 프린터</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-2')">장비연동</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-3')">화면표시</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-4')">외부연동</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="front-1" class="sub-panel grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="printer" class="text-indigo-500" style="width:16px;height:16px;"></i> 프린터 설정</h4>
+                                            <div class="form-group mb-0">
+                                                <label>프린터 기기 선택</label>
+                                                <select class="modern-input"><option>프린터를 선택하세요</option></select>
+                                            </div>
+                                        </div>
+                                        <div class="modern-card">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="settings" class="text-indigo-500" style="width:16px;height:16px;"></i> 기본 설정</h4>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4">
+                                                <div class="font-bold text-slate-700 mb-2" style="font-size:11px;">통신포트 매핑</div>
+                                                <div class="grid-2">
+                                                    <div class="form-group m-0"><label>SoftFront</label><input type="text" class="modern-input" value="15001"/></div>
+                                                    <div class="form-group m-0"><label>PointNix</label><input type="text" class="modern-input" value="9330"/></div>
+                                                </div>
+                                                <div class="flex justify-end mt-3"><button class="modern-btn-outline" style="height:28px; padding:0 8px; font-size:11px;">기본값 불러오기</button></div>
+                                            </div>
+                                            <div class="flex flex-col gap-2">
+                                                <label class="checkbox-label" style="font-size:12px;"><input type="checkbox" /> 내원고객문자발송 활성화 <select class="modern-input inline-block ml-2" style="height:24px; width:80px; padding:0 4px;"><option>선택</option></select></label>
+                                                <label class="checkbox-label" style="font-size:12px;"><input type="checkbox" /> 검사챠트 사용</label>
+                                                <label class="checkbox-label" style="font-size:12px;"><input type="checkbox" /> 예약 대기자를 자동 호출</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="front-2" class="sub-panel hidden grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="credit-card" class="text-indigo-500" style="width:16px;height:16px;"></i> RF System 설정</h4>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-3">
+                                                <div class="font-bold text-slate-700 mb-2" style="font-size:11px;">시스템 타입</div>
+                                                <div class="flex flex-col gap-2">
+                                                    <label class="radio-label"><input type="radio" name="rftype" checked /> B Type: 버튼클릭 내원</label>
+                                                    <label class="radio-label"><input type="radio" name="rftype" /> A Type: 카드 리딩 내원</label>
+                                                </div>
+                                            </div>
+                                            <label class="checkbox-label text-xs"><input type="checkbox" /> 내원대기시 영문성명 확인</label>
+                                        </div>
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="monitor" class="text-indigo-500" style="width:16px;height:16px;"></i> 듀얼모니터 설정</h4>
+                                            <label class="checkbox-label font-bold text-slate-800"><input type="checkbox" checked /> 듀얼모니터 활성화</label>
+                                            <div class="mt-3 border-t border-slate-100 pt-3">
+                                                <div class="form-group"><label>모니터 선택</label><select class="modern-input"><option>DISPLAY2</option></select></div>
+                                                <label class="checkbox-label text-xs mb-3"><input type="checkbox" /> 확인창 표시</label>
+                                                <div class="form-group mb-0"><label>대기 이미지 경로</label><div class="flex gap-2"><input type="text" class="modern-input flex-1"/><button class="modern-btn-outline" style="height:auto; padding:4px 12px;">찾기</button></div></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="front-3" class="sub-panel hidden grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="layout-grid" class="text-indigo-500" style="width:16px;height:16px;"></i> 대기자 리스트 설정</h4>
+                                            <label class="checkbox-label font-bold text-slate-800 mb-4"><input type="checkbox" checked /> 메인폼 UI에 포함</label>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4">
+                                                <span class="font-bold text-slate-700 block mb-2" style="font-size:11px;">리스트 새로고침 주기</span>
+                                                <div class="flex gap-4">
+                                                    <label class="radio-label text-xs"><input type="radio" name="waitref" /> 10초</label>
+                                                    <label class="radio-label text-xs"><input type="radio" name="waitref" checked /> 20초</label>
+                                                </div>
+                                            </div>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                <span class="font-bold text-slate-700 block mb-2" style="font-size:11px;">표시 진료명 필터링</span>
+                                                <div class="flex gap-4 mb-2">
+                                                    <label class="radio-label text-xs"><input type="radio" name="waitdisp" checked /> 진료명</label>
+                                                    <label class="radio-label text-xs"><input type="radio" name="waitdisp" /> 대기층</label>
+                                                </div>
+                                                <div class="h-24 overflow-y-auto border border-slate-200 bg-white rounded">
+                                                    <table class="modern-table" style="font-size:11px;">
+                                                        <tbody>
+                                                            <tr><td class="w-8 p-1 text-center border-r"><input type="checkbox" checked/></td><td class="p-1 px-2">외래22</td></tr>
+                                                            <tr><td class="w-8 p-1 text-center border-r"><input type="checkbox" /></td><td class="p-1 px-2">수술</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="users" class="text-indigo-500" style="width:16px;height:16px;"></i> 예약 및 내원자</h4>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4">
+                                                <span class="font-bold text-slate-700 block mb-2" style="font-size:11px;">새로고침 주기</span>
+                                                <div class="flex gap-4">
+                                                    <label class="radio-label text-xs"><input type="radio" name="resref" /> 10초</label>
+                                                    <label class="radio-label text-xs"><input type="radio" name="resref" checked /> 20초</label>
+                                                </div>
+                                            </div>
+                                            <label class="checkbox-label text-xs font-bold"><input type="checkbox" checked /> 수술기준일 <input type="date" class="modern-input h-7 w-32 ml-2 inline-block"/></label>
+                                        </div>
+                                    </div>
+                                    <div id="front-4" class="sub-panel hidden grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="bell" class="text-indigo-500" style="width:16px;height:16px;"></i> 대기번호 호출 설정</h4>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                <label class="checkbox-label font-bold text-slate-800 mb-3"><input type="checkbox" checked /> 호출기능 활성화</label>
+                                                <div class="grid-2 gap-3 pl-2" style="border-left:2px solid #C7D2FE;">
+                                                    <div class="form-group m-0"><label>IP Address</label><input type="text" class="modern-input" /></div>
+                                                    <div class="form-group m-0"><label>Receive Port</label><div class="flex gap-1"><input type="text" class="modern-input flex-1" /><button class="modern-btn-outline" style="height:auto; padding:2px 8px; font-size:10px;">기본</button></div></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="activity" class="text-indigo-500" style="width:16px;height:16px;"></i> SoftTrace 연동</h4>
+                                            <div class="form-group">
+                                                <label>실행파일 경로</label>
+                                                <div class="flex gap-2">
+                                                    <input type="text" class="modern-input flex-1" style="font-size:11px;" value="C:\SoftTrace.exe" />
+                                                    <button class="modern-btn-outline" style="height:auto; padding:4px 12px; font-size:11px;">찾기</button>
+                                                </div>
+                                            </div>
+                                            <div class="flex gap-2 mt-4">
+                                                <button class="modern-btn-primary flex-1" style="box-shadow:none;">실행 테스트</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftPosition -->
+                            <div id="tab-position" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'pos-1')">기본 및 외부연동</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'pos-2')">리더기 설정</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'pos-3')">장비연동/TTS</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="pos-1" class="sub-panel grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="settings" class="text-rose-500" style="width:16px;height:16px;"></i> 기본 통신 설정</h4>
+                                            <div class="grid-2 gap-3 mb-4">
+                                                <div class="form-group m-0"><label>SoftCRM 포트</label><input type="text" class="modern-input" value="15002" /></div>
+                                                <div class="form-group m-0"><label>진료구분</label><select class="modern-input"><option>검사</option></select></div>
+                                            </div>
+                                            <div class="bg-rose-50 p-3 rounded-lg border border-rose-100">
+                                                <div class="font-bold text-rose-800 mb-2" style="font-size:11px;">상담사 자동 매핑</div>
+                                                <div class="flex flex-col gap-2">
+                                                    <label class="radio-label text-xs"><input type="radio" name="counselor" checked /> CRM 데이터 따름</label>
+                                                    <label class="radio-label text-xs"><input type="radio" name="counselor" /> 수동 지정</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="network" class="text-rose-500" style="width:16px;height:16px;"></i> 외부 연동 (EMR)</h4>
+                                            <div class="font-bold text-slate-700 mb-2" style="font-size:11px;">아이누리 EMR</div>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 grid-2 gap-3 mb-4">
+                                                <div class="form-group m-0"><label>Position 포트</label><input type="text" class="modern-input" value="15001" /></div>
+                                                <div class="form-group m-0"><label>접수 Port</label><input type="text" class="modern-input" value="9330" /></div>
+                                            </div>
+                                            <label class="checkbox-label text-xs font-bold text-slate-800"><input type="checkbox" /> EMR 자동 호출 활성화</label>
+                                        </div>
+                                    </div>
+                                    <div id="pos-2" class="sub-panel hidden grid-2">
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="credit-card" class="text-rose-500" style="width:16px;height:16px;"></i> 카드리더 1 (시리얼)</h4>
+                                            <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mb-4 flex flex-col gap-3">
+                                                <div class="grid-2">
+                                                    <div class="form-group m-0"><label>Port 번호</label><select class="modern-input"><option>COM1</option></select></div>
+                                                    <div class="form-group m-0"><label>Baudrate</label><select class="modern-input"><option>9600</option></select></div>
+                                                </div>
+                                                <div class="flex gap-2 mt-1">
+                                                    <button class="modern-btn-outline flex-1" style="height:28px; padding:0 8px; font-size:11px;">연결</button>
+                                                    <button class="modern-btn-outline flex-1" style="height:28px; padding:0 8px; font-size:11px;">끊기</button>
+                                                </div>
+                                            </div>
+                                            <div class="form-group m-0"><label>스캔 데이터 확인</label><input type="text" class="modern-input bg-slate-100" readonly placeholder="대기 중..." /></div>
+                                        </div>
+                                        <div class="modern-card h-fit">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="credit-card" class="text-rose-500" style="width:16px;height:16px;"></i> 카드리더 (HID)</h4>
+                                            <div class="flex flex-col gap-3">
+                                                <div class="form-group m-0"><label>Hexa Data</label><input type="text" class="modern-input bg-slate-100" readonly placeholder="스캔 시 표시됨" /></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="pos-3" class="sub-panel hidden">
+                                        <div class="modern-card" style="max-width: 500px;">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="headphones" class="text-rose-500" style="width:16px;height:16px;"></i> 음성 안내 (TTS) 설정</h4>
+                                            <label class="checkbox-label font-bold text-slate-800 mb-4"><input type="checkbox" checked /> TTS 엔진 활성화</label>
+                                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                                <div class="font-bold text-sm text-slate-700 mb-3">호출 텍스트 템플릿</div>
+                                                <div class="flex gap-2 mb-2">
+                                                    <button class="modern-btn-outline text-blue-600 border-blue-200" style="height:24px; padding:0 8px; font-size:10px;">+ 고객명</button>
+                                                    <button class="modern-btn-outline text-emerald-600 border-emerald-200" style="height:24px; padding:0 8px; font-size:10px;">+ 창구명</button>
+                                                </div>
+                                                <textarea class="modern-input py-2" style="height: 80px; resize:none;">{고객명}님, {창구명}으로 와주시기 바랍니다.</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftTelemanager -->
+                            <div id="tab-tele" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'tele-1')">웹서버</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="tele-1" class="sub-panel">
+                                        <div class="modern-card" style="max-width: 500px;">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="server" class="text-amber-500" style="width:16px;height:16px;"></i> 웹서버 연결 설정</h4>
+                                            <div class="grid-2">
+                                                <div class="form-group" style="grid-column: span 2;"><label>IP Address <span class="text-rose-500">*</span></label><input type="text" class="modern-input" /></div>
+                                                <div class="form-group"><label>Port <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="3306" /></div>
+                                                <div class="form-group"><label>Database Name <span class="text-rose-500">*</span></label><input type="text" class="modern-input" /></div>
+                                                <div class="form-group"><label>User Name <span class="text-rose-500">*</span></label><input type="text" class="modern-input" /></div>
+                                                <div class="form-group"><label>Password <span class="text-rose-500">*</span></label><input type="password" class="modern-input" /></div>
+                                            </div>
+                                            <div class="flex justify-end mt-4 pt-4 border-t border-slate-100">
+                                                <button class="modern-btn-primary" style="background:#F59E0B; color:white;"><i data-lucide="server" style="width:14px;height:14px; color:white;"></i> <span style="color:white;">접속 테스트</span></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: SoftTrace -->
+                            <div id="tab-trace" class="setting-panel hidden h-full flex-col">
+                                <div class="modern-tabs">
+                                    <button class="modern-tab active" onclick="switchSubTab(this, 'trace-1')">진료설정</button>
+                                    <button class="modern-tab" onclick="switchSubTab(this, 'trace-2')">고객뷰어</button>
+                                </div>
+                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
+                                    <div id="trace-1" class="sub-panel">
+                                        <div class="modern-card" style="max-width: 400px;">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="activity" class="text-teal-500" style="width:16px;height:16px;"></i> 진료 항목 표시 설정</h4>
+                                            <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-3">
+                                                <label class="checkbox-label text-sm"><input type="checkbox" checked /> 외래 표시</label>
+                                                <label class="checkbox-label text-sm"><input type="checkbox" checked /> 수술 표시</label>
+                                                <label class="checkbox-label text-sm"><input type="checkbox" checked /> 검사 표시</label>
+                                                <div style="width:100%; height:1px; background:#E2E8F0; margin:4px 0;"></div>
+                                                <label class="checkbox-label text-sm"><input type="checkbox" /> 차의현 표시</label>
+                                                <label class="checkbox-label text-sm"><input type="checkbox" /> 건조증1 표시</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="trace-2" class="sub-panel hidden">
+                                        <div class="modern-card" style="max-width: 500px;">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="user" class="text-teal-500" style="width:16px;height:16px;"></i> 고객뷰어 공지 설정</h4>
+                                            <div class="form-group">
+                                                <label>전광판 공지사항</label>
+                                                <textarea class="modern-input py-2" style="height: 120px; resize:none;" placeholder="뷰어 상단에 롤링될 공지사항 텍스트를 입력하세요."></textarea>
+                                            </div>
+                                            <div class="mt-4 pt-4 border-t border-slate-100">
+                                                <label class="checkbox-label font-bold text-slate-800"><input type="checkbox" checked /> 런처 시작 시 고객뷰어 자동 실행</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <!-- 수정됨: 하단 여백 및 디스크(저장) 아이콘 흰색 강제 적용 -->
+                <div class="flex items-center justify-end bg-white border-t border-slate-100 shrink-0 gap-3" style="padding: 16px 24px;">
+                    <button class="modern-btn-outline" onclick="toggleSettings(false)">취소</button>
+                    <button class="modern-btn-primary shadow-md px-8" onclick="toggleSettings(false)">
+                        <i data-lucide="save" style="width:16px;height:16px; color:white;"></i> <span style="color:white;">적용</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    // Clock
+    setInterval(() => {
+        const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        document.getElementById('current-time').innerText = timeStr;
+    }, 1000);
+
+    // Initial state
+    let isLoggedIn = false;
+
+    // Login Logic
+    document.getElementById('login-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        
+        const btnText = document.getElementById('login-btn-text');
+        const btnLoader = document.getElementById('login-btn-loader');
+        const usernameInput = document.getElementById('login-id');
+        const loginBtn = document.getElementById('btn-login-submit');
+
+        // Loading state
+        loginBtn.disabled = true;
+        btnText.classList.add('hidden');
+        btnLoader.classList.remove('hidden');
+
+        setTimeout(() => {
+            isLoggedIn = true;
+            
+            // Reset button
+            loginBtn.disabled = false;
+            btnText.classList.remove('hidden');
+            btnLoader.classList.add('hidden');
+
+            // Switch Views
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('profile-view').classList.remove('hidden');
+            
+            // Set Name
+            document.getElementById('profile-name').innerText = usernameInput.value;
+            
+            // Close warning if open
+            closeWarning();
+            
+        }, 800);
+    });
+
+    // Logout Logic
+    document.getElementById('btn-logout').addEventListener('click', () => {
+        isLoggedIn = false;
+        document.getElementById('login-id').value = '';
+        document.getElementById('login-pw').value = '';
+        
+        document.getElementById('login-view').classList.remove('hidden');
+        document.getElementById('profile-view').classList.add('hidden');
+    });
+
+    // Launch App Logic
+    function launchApp(appName) {
+        if (!isLoggedIn) {
+            document.getElementById('login-warning').classList.remove('hidden');
+            setTimeout(closeWarning, 2500);
+            return;
+        }
+        
+        const overlay = document.getElementById('launch-overlay');
+        document.getElementById('launch-app-name').innerText = appName + ' 모듈 실행 중...';
+        overlay.classList.remove('hidden');
+        overlay.style.display = 'flex';
+        
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+            overlay.style.display = 'none';
+        }, 1500);
+    }
+
+    function closeWarning() {
+        document.getElementById('login-warning').classList.add('hidden');
+    }
+
+    // Settings Modal Logic
+    function toggleSettings(show) {
+        const modal = document.getElementById('settings-modal');
+        if (show) {
+            modal.classList.remove('hidden');
+        } else {
+            modal.classList.add('hidden');
+        }
+    }
+    document.getElementById('btn-open-settings').addEventListener('click', () => toggleSettings(true));
+
+    // Settings Tab Switching
+    function switchSettingTab(tabId, btnElement) {
+        // Update Sidebar styling
+        document.querySelectorAll('.side-nav-item').forEach(el => {
+            el.classList.remove('active');
+            el.querySelector('.nav-icon').classList.remove('bg-blue-100', 'text-blue-600');
+            el.querySelector('.nav-icon').classList.add('bg-slate-100', 'text-slate-500');
+        });
+        btnElement.classList.add('active');
+        btnElement.querySelector('.nav-icon').classList.remove('bg-slate-100', 'text-slate-500');
+        btnElement.querySelector('.nav-icon').classList.add('bg-blue-100', 'text-blue-600');
+
+        // Update Title & Badge
+        document.getElementById('setting-content-title').innerText = btnElement.querySelector('span').innerText;
+        const badge = document.getElementById('setting-content-badge');
+        if (tabId === 'common') badge.classList.add('hidden');
+        else badge.classList.remove('hidden');
+
+        // Hide all panels
+        document.querySelectorAll('.setting-panel').forEach(panel => panel.classList.add('hidden'));
+        
+        // Show selected panel
+        const targetPanel = document.getElementById(`tab-${tabId}`);
+        if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+            targetPanel.style.display = 'flex';
+        }
+    }
+
+    // Sub Tab Switching
+    function switchSubTab(btnElement, targetId) {
+        const parent = btnElement.parentElement;
+        parent.querySelectorAll('.modern-tab').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+
+        const container = parent.nextElementSibling;
+        container.querySelectorAll('.sub-panel').forEach(panel => {
+            panel.classList.add('hidden');
+            panel.style.display = ''; // Reset inline display
+        });
+        
+        const target = document.getElementById(targetId);
+        if(target) {
+            target.classList.remove('hidden');
+            if(target.classList.contains('grid-2')) {
+                target.style.display = 'grid';
+            } else if (!target.classList.contains('flex') && !target.classList.contains('flex-col')) {
+                 target.style.display = 'block';
+            }
+        }
+    }
+
+    // Radio Card Logic
+    function toggleRadioCard(element, name) {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(input => {
+            input.parentElement.classList.remove('active');
+        });
+        element.classList.add('active');
+        element.querySelector('input').checked = true;
+    }
+
+</script>
+</body>
+</html>
