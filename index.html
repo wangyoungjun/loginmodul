@@ -53,7 +53,6 @@
 
         /* 내부 레이아웃 */
         .sidebar { width: 340px; background: var(--c-panel); border-right: 1px solid var(--c-border); display: flex; flex-direction: column; z-index: 10; box-shadow: 4px 0 24px rgba(0,0,0,0.02); }
-        /* 수정됨: 여백을 최적화하여 스크롤 발생 방지 */
         .main-area { flex: 1; padding: 24px 32px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
         
         /* 애니메이션 */
@@ -64,6 +63,12 @@
         
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
         .pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+        @keyframes progress { 0% { width: 0%; } 100% { width: 100%; } }
+        .progress-bar-fill { animation: progress 2s ease-in-out forwards; }
+        
+        @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+        .animate-bounce-subtle { animation: bounce-subtle 1.5s infinite; }
 
         /* Login UI & Badges */
         .login-hero { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 0 40px; }
@@ -86,42 +91,68 @@
         .f-link:hover { color: var(--c-text); }
 
         /* Dashboard Header & Time */
-        /* 수정됨: 여백을 좁힘 */
         .dashboard-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--c-border); flex-shrink: 0; }
         .time-badge { background: white; padding: 8px 16px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; text-align: right; }
 
-        /* Dashboard Cards */
-        /* 수정됨: 패딩과 여백을 좁혀 한 화면에 렌더링되게 함 */
+        /* Dashboard Cards & Badges (Installed, Uninstalled, Unregistered) */
         .app-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 0; margin-bottom: 16px; flex-shrink: 0; }
         .app-card { background: white; border-radius: 16px; padding: 16px; cursor: pointer; border: 1px solid var(--c-border); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; overflow: hidden; }
-        .app-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); border-color: #CBD5E1; }
+        
+        /* Hover Effects (Installed & Uninstalled only) */
+        .app-card:not(.unregistered):hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,0.06); border-color: #CBD5E1; }
+        .app-card:not(.unregistered):hover .app-icon-wrap { transform: scale(1.1); }
+        .app-card:not(.unregistered):hover .app-title { color: var(--c-primary); }
+        .app-card:not(.unregistered):hover .app-action-icon { opacity: 1; color: var(--c-primary); transform: translateX(0); }
+        
+        /* Card Elements */
         .app-icon-wrap { width: 36px; height: 36px; border-radius: 10px; background: #F8FAFC; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; transition: transform 0.3s; }
-        .app-card:hover .app-icon-wrap { transform: scale(1.1); }
-        .app-card:hover .app-title { color: var(--c-primary); }
         .app-title { font-size: 14px; font-weight: 800; margin-bottom: 2px; transition: color 0.2s; }
         .app-desc { font-size: 11px; color: var(--c-text-muted); line-height: 1.3; }
-        .app-chevron { position: absolute; right: 16px; bottom: 16px; color: #CBD5E1; opacity: 0; transition: all 0.3s; transform: translateX(8px); }
-        .app-card:hover .app-chevron { opacity: 1; color: var(--c-primary); transform: translateX(0); }
+        
+        /* Action Icons (Run vs Install) */
+        .app-action-icon { position: absolute; right: 16px; bottom: 16px; color: #CBD5E1; opacity: 0; transition: all 0.3s; transform: translateX(8px); }
+        .app-card .icon-install { display: none; }
+        .app-card .icon-run { display: block; }
+        .app-card.uninstalled .icon-install { display: block; }
+        .app-card.uninstalled .icon-run { display: none; }
+        .app-card.unregistered .app-action-icon { display: none; } /* 미등록은 액션 아이콘 숨김 */
+
+        /* Card Badges */
+        .app-badge { position: absolute; top: 12px; right: 12px; padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; letter-spacing: -0.2px; transition: all 0.3s; }
+        .badge-installed { background-color: #DBEAFE; color: #2563EB; border: 1px solid transparent; }
+        .badge-uninstalled { background-color: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; } /* 주황색 뱃지 */
+        .badge-unregistered { background-color: #F1F5F9; color: #94A3B8; border: 1px solid #E2E8F0; }
+        
+        /* Unregistered Card Styling (비활성화 느낌) */
+        .app-card.unregistered { background: #F8FAFC; border-color: #E2E8F0; cursor: default; }
+        .app-card.unregistered .app-icon-wrap { filter: grayscale(100%); opacity: 0.5; background: #F1F5F9; }
+        .app-card.unregistered .app-title { color: #94A3B8; }
+        .app-card.unregistered .app-desc { color: #CBD5E1; }
 
         /* Settings Modal Structural Classes */
-        /* 수정됨: 사이드바 및 콘텐츠 여백 안정화 */
         .settings-sidebar { width: 220px; background: white; border-right: 1px solid var(--c-border); display: flex; flex-direction: column; padding: 16px; gap: 4px; overflow-y: auto; flex-shrink: 0; }
         .sidebar-heading { font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; margin: 12px 0 8px 8px; }
         .sidebar-heading:first-child { margin-top: 4px; }
         .settings-content-area { flex: 1; display: flex; flex-direction: column; padding: 24px 32px; overflow: hidden; background: #F8FAFC; }
 
-        /* Modern Settings UI */
+        /* Accordion Menu UI */
+        .accordion-group { display: flex; flex-direction: column; width: 100%; margin-bottom: 4px; }
+        .accordion-body { overflow: hidden; transition: all 0.3s ease; }
         .side-nav-item { display: flex; align-items: center; justify-content: flex-start; gap: 12px; width: 100%; padding: 8px 12px; border-radius: 10px; background: transparent; border: none; cursor: pointer; transition: all 0.2s; color: var(--c-text-muted); text-align: left; }
         .side-nav-item:hover { background: #F8FAFC; color: var(--c-text); }
         .side-nav-item.active { background: #EFF6FF; color: var(--c-primary); }
         .side-nav-item.active .nav-icon { background: #DBEAFE; color: var(--c-primary); }
-        .nav-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: #F1F5F9; color: #64748B; flex-shrink: 0;}
         
-        .modern-tabs { display: flex; gap: 4px; border-bottom: 2px solid #E2E8F0; padding-bottom: 0; flex-shrink: 0; }
-        .modern-tab { padding: 8px 14px; background: none; border: none; font-size: 13px; font-weight: 700; color: #94A3B8; cursor: pointer; position: relative; transition: color 0.2s; }
-        .modern-tab:hover { color: var(--c-text); }
-        .modern-tab.active { color: var(--c-primary); }
-        .modern-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: var(--c-primary); border-radius: 3px 3px 0 0; }
+        .nav-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; background: #F1F5F9; color: #64748B; flex-shrink: 0;}
+        .sub-nav-item { display: block; width: 100%; padding: 8px 12px 8px 40px; margin-bottom: 2px; border-radius: 8px; background: transparent; border: none; text-align: left; font-size: 12.5px; font-weight: 600; color: #64748B; cursor: pointer; transition: all 0.2s; position: relative; }
+        .sub-nav-item::before { content: ''; position: absolute; left: 22px; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; border-radius: 50%; background: #CBD5E1; transition: all 0.2s; }
+        .sub-nav-item:hover { background: #F1F5F9; color: var(--c-text); }
+        .sub-nav-item:hover::before { background: var(--c-primary); }
+        .sub-nav-item.active { background: #EFF6FF; color: var(--c-primary); font-weight: 700; }
+        .sub-nav-item.active::before { background: var(--c-primary); width: 6px; height: 6px; left: 21px; }
+        
+        .ml-auto { margin-left: auto; }
+        .transition-transform { transition: transform 0.2s ease; }
         
         .pill-tab { padding: 6px 14px; background: transparent; border: 1px solid transparent; border-radius: 100px; font-size: 12px; font-weight: 600; color: var(--c-text-muted); cursor: pointer; transition: all 0.2s; }
         .pill-tab:hover { background: #E2E8F0; }
@@ -153,7 +184,6 @@
         .radio-card.active .radio-circle { border-color: var(--c-primary); }
         .radio-card.active .radio-circle::after { content: ''; position: absolute; inset: 3px; background: var(--c-primary); border-radius: 50%; }
 
-        /* 수정됨: 여백 최적화로 공간 절약 */
         .modern-table { width: 100%; border-collapse: collapse; }
         .modern-table th { background: #F8FAFC; padding: 8px 12px; text-align: left; font-size: 12px; font-weight: 700; color: #64748B; border-bottom: 1px solid #E2E8F0; }
         .modern-table td { padding: 8px 12px; border-bottom: 1px solid #F1F5F9; font-size: 12px; }
@@ -243,9 +273,7 @@
                         </div>
                         
                         <button type="submit" class="btn-login" id="btn-login-submit">
-                            <!-- 수정됨: 시스템 로그인 텍스트 명시적 화이트 색상 적용 -->
                             <span id="login-btn-text" style="color: #ffffff !important;">로그인</span>
-                            <!-- 로딩스피너 화이트 색상 적용 -->
                             <i data-lucide="loader-2" class="spin hidden" id="login-btn-loader" style="width:18px;height:18px; color: #ffffff;"></i>
                         </button>
                     </form>
@@ -259,16 +287,36 @@
             </div>
 
             <!-- Profile View (Hidden initially) -->
-            <div id="profile-view" class="flex flex-col items-center justify-center h-full p-6 fade-in hidden">
-                <div class="bg-blue-50 shadow-lg rounded-lg flex items-center justify-center mb-4" style="width:80px;height:80px; border-radius:50%; border:3px solid white;">
-                    <i data-lucide="user" class="text-blue-600" style="width:32px;height:32px;"></i>
+            <div id="profile-view" class="flex flex-col h-full fade-in hidden">
+                <div class="login-hero">
+                    <div class="login-header-info">
+                        <div class="flex items-center gap-2">
+                            <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--c-primary);" class="pulse"></div>
+                            <span>Ver 26.03.17.02</span>
+                        </div>
+                        <div class="pc-badge">
+                            <i data-lucide="monitor" style="width:14px;height:14px;"></i> 등록PC명: 왕영준pc
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center justify-center mt-4 mb-8">
+                        <div class="bg-blue-50 shadow-lg rounded-full flex items-center justify-center mb-4" style="width:80px;height:80px; border:3px solid white;">
+                            <i data-lucide="user" class="text-blue-600" style="width:32px;height:32px;"></i>
+                        </div>
+                        <h2 id="profile-name" class="font-extrabold mb-1" style="font-size: 20px;">-</h2>
+                        <p class="font-semibold text-slate-500 mb-6 bg-slate-100 border border-slate-200" style="font-size: 12px; padding: 4px 12px; border-radius: 20px;">성민안과병원</p>
+                        
+                        <button id="btn-logout" class="modern-btn-outline w-full" style="max-width: 200px; color: var(--text-rose-500); border-color: #FECDD3; background: #FFF1F2;">
+                            <i data-lucide="log-out" style="width:14px;height:14px;"></i> 업무 종료 (로그아웃)
+                        </button>
+                    </div>
                 </div>
-                <h2 id="profile-name" class="font-extrabold mb-1" style="font-size: 20px;">-</h2>
-                <p class="font-semibold text-slate-500 mb-6 bg-slate-100 border border-slate-200" style="font-size: 12px; padding: 4px 12px; border-radius: 20px;">원장</p>
                 
-                <button id="btn-logout" class="modern-btn-outline w-full" style="max-width: 200px; color: var(--text-rose-500); border-color: #FECDD3; background: #FFF1F2;">
-                    <i data-lucide="log-out" style="width:14px;height:14px;"></i> 업무 종료 (로그아웃)
-                </button>
+                <div class="footer-links">
+                    <button class="f-link"><i data-lucide="help-circle" style="width:12px;height:12px;"></i> 매뉴얼</button>
+                    <button class="f-link"><i data-lucide="refresh-cw" style="width:12px;height:12px;"></i> 업데이트 내역</button>
+                    <button class="f-link"><i data-lucide="shopping-cart" style="width:12px;height:12px;"></i> 고객지원</button>
+                </div>
             </div>
         </div>
 
@@ -289,43 +337,67 @@
                 <!-- Apps Grid -->
                 <div class="fade-in shrink-0">
                     <div class="app-grid">
-                        <!-- App Cards -->
-                        <div class="app-card group" onclick="launchApp('SoftCRM')">
+                        
+                        <!-- 설치된 모듈 1: SoftCRM -->
+                        <div class="app-card group" onclick="launchApp('SoftCRM', 'installed', this)">
+                            <div class="app-badge badge-installed">설치</div>
                             <div class="app-icon-wrap"><i data-lucide="user" class="text-blue-500"></i></div>
                             <h3 class="app-title">SoftCRM</h3>
-                            <p class="app-desc">체계적 고객관리 시스템</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                            <p class="app-desc">고객 관계 및 이력 관리</p>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
                         </div>
-                        <div class="app-card group" onclick="launchApp('SoftCTI')">
+                        
+                        <!-- 설치된 모듈 2: SoftCTI -->
+                        <div class="app-card group" onclick="launchApp('SoftCTI', 'installed', this)">
+                            <div class="app-badge badge-installed">설치</div>
                             <div class="app-icon-wrap"><i data-lucide="phone" class="text-emerald-500"></i></div>
                             <h3 class="app-title">SoftCTI</h3>
-                            <p class="app-desc">스마트 콜센터 시스템</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                            <p class="app-desc">스마트 콜센터 통합</p>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
                         </div>
-                        <div class="app-card group" onclick="launchApp('SoftFront')">
+                        
+                        <!-- 설치된 모듈 3: SoftFront -->
+                        <div class="app-card group" onclick="launchApp('SoftFront', 'installed', this)">
+                            <div class="app-badge badge-installed">설치</div>
                             <div class="app-icon-wrap"><i data-lucide="monitor" class="text-indigo-500"></i></div>
                             <h3 class="app-title">SoftFront</h3>
                             <p class="app-desc">프론트 데스크 접수</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
                         </div>
-                        <div class="app-card group" onclick="launchApp('SoftPosition')">
-                            <div class="app-icon-wrap"><i data-lucide="map-pin" class="text-rose-500"></i></div>
-                            <h3 class="app-title">SoftPosition</h3>
-                            <p class="app-desc">실시간 관제 시스템</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
-                        </div>
-                        <div class="app-card group" onclick="launchApp('SoftTelemanager')">
-                            <div class="app-icon-wrap"><i data-lucide="headphones" class="text-amber-500"></i></div>
-                            <h3 class="app-title">SoftTelemanager</h3>
-                            <p class="app-desc">아웃바운드 텔레마케팅</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
-                        </div>
-                        <div class="app-card group" onclick="launchApp('SoftTrace')">
+                        
+                        <!-- 미설치 모듈 1: SoftTrace (설치 시뮬레이션용) -->
+                        <div class="app-card uninstalled group" onclick="launchApp('SoftTrace', 'uninstalled', this)">
+                            <div class="app-badge badge-uninstalled">미설치</div>
                             <div class="app-icon-wrap"><i data-lucide="activity" class="text-teal-500"></i></div>
                             <h3 class="app-title">SoftTrace</h3>
                             <p class="app-desc">시스템 로그 추적</p>
-                            <i data-lucide="chevron-right" class="app-chevron"></i>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
                         </div>
+
+                        <!-- 미등록 모듈 1: SoftPosition -->
+                        <div class="app-card unregistered group" onclick="launchApp('SoftPosition', 'unregistered', this)">
+                            <div class="app-badge badge-unregistered">미등록</div>
+                            <div class="app-icon-wrap"><i data-lucide="map-pin" class="text-rose-500"></i></div>
+                            <h3 class="app-title">SoftPosition</h3>
+                            <p class="app-desc">실시간 관제 및 배차</p>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
+                        </div>
+                        
+                        <!-- 미등록 모듈 2: SoftTelemanager -->
+                        <div class="app-card unregistered group" onclick="launchApp('SoftTelemanager', 'unregistered', this)">
+                            <div class="app-badge badge-unregistered">미등록</div>
+                            <div class="app-icon-wrap"><i data-lucide="headphones" class="text-amber-500"></i></div>
+                            <h3 class="app-title">SoftTelemanager</h3>
+                            <p class="app-desc">아웃바운드 텔레마케팅</p>
+                            <i data-lucide="chevron-right" class="app-action-icon icon-run"></i>
+                            <i data-lucide="download" class="app-action-icon icon-install"></i>
+                        </div>
+                        
                     </div>
                 </div>
 
@@ -340,12 +412,12 @@
                             <tbody>
                                 <tr class="cursor-pointer">
                                     <td class="text-center" style="width:60px;"><span class="bg-blue-100 text-blue-700 px-1 py-0.5 rounded font-bold" style="font-size:10px;">공지</span></td>
-                                    <td class="font-bold text-slate-700" style="font-size: 12px;">통합 런처(SoftWorkspace) 오픈 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px; color:red;">NEW</span></td>
+                                    <td class="font-bold text-slate-700" style="font-size: 12px;">통합 런처(SoftWorkspace) 오픈 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px;">NEW</span></td>
                                     <td class="text-right font-semibold text-slate-400" style="font-size: 12px; width:80px;">26.03.17</td>
                                 </tr>
                                 <tr class="cursor-pointer">
                                     <td class="text-center"><span class="bg-emerald-100 text-emerald-700 px-1 py-0.5 rounded font-bold" style="font-size:10px;">업데이트</span></td>
-                                    <td class="font-bold text-slate-700" style="font-size: 12px;">SoftCRM v3.0 속도 개선 패치 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px; color:red;">NEW</span></td>
+                                    <td class="font-bold text-slate-700" style="font-size: 12px;">SoftCRM v3.0 속도 개선 패치 <span class="bg-rose-500 text-white rounded px-1" style="font-size:9px; margin-left:4px;">NEW</span></td>
                                     <td class="text-right font-semibold text-slate-400" style="font-size: 12px;">26.03.16</td>
                                 </tr>
                                 <tr class="cursor-pointer">
@@ -366,6 +438,20 @@
                 <span id="launch-app-name" class="font-semibold text-slate-500 mt-1" style="font-size: 12px;"></span>
             </div>
 
+            <!-- Installation Progress Overlay (Hidden) -->
+            <div id="install-overlay" class="absolute inset-0 bg-white fade-in hidden flex-col items-center justify-center z-10" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(4px); border-radius: 16px;">
+                <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4 text-center border border-blue-100" style="width: 280px;">
+                    <i data-lucide="download-cloud" class="text-blue-500 animate-bounce-subtle" style="width:36px;height:36px;"></i>
+                    <div class="w-full">
+                        <h3 class="font-extrabold text-slate-800 mb-3" style="font-size: 15px;" id="install-app-name">모듈 설치 중</h3>
+                        <div class="w-full bg-slate-100 rounded-full overflow-hidden mb-2" style="height: 6px;">
+                            <div class="bg-blue-500 rounded-full progress-bar-fill" style="height: 6px;"></div>
+                        </div>
+                        <p class="text-slate-500 font-semibold" style="font-size: 11px;">서버에서 최신 파일을 다운로드하고 있습니다...</p>
+                    </div>
+                </div>
+            </div>
+
             <!-- Login Warning Overlay (Hidden) -->
             <div id="login-warning" class="absolute inset-0 z-50 bg-slate-900-40 backdrop-blur-sm flex items-center justify-center fade-in hidden" style="border-radius: 0 20px 20px 0;">
                 <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4 text-center border border-rose-100" style="max-width: 280px;">
@@ -381,11 +467,26 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Unregistered App Warning Overlay (Hidden) -->
+            <div id="unregistered-warning" class="absolute inset-0 z-50 bg-slate-900-40 backdrop-blur-sm flex items-center justify-center fade-in hidden" style="border-radius: 0 20px 20px 0;">
+                <div class="bg-white p-6 rounded-2xl shadow-xl flex flex-col items-center gap-4 text-center border border-slate-200" style="max-width: 280px;">
+                    <div class="bg-slate-100 text-slate-500 rounded-full flex items-center justify-center mb-1" style="width:56px;height:56px;">
+                        <i data-lucide="info" style="width:28px;height:28px;"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-extrabold text-slate-800" style="font-size: 17px;">미등록 모듈입니다</h3>
+                        <p class="text-slate-500 mt-2" style="font-size: 12px; line-height: 1.5;">해당 서비스는 아직 계약되지 않았습니다.<br/>설치 및 도입 문의는 관리자에게 연락해주세요.</p>
+                    </div>
+                    <button class="modern-btn-outline w-full mt-2" style="height: 40px; font-size: 13px;" onclick="closeUnregisteredWarning()">확인</button>
+                </div>
+            </div>
         </div>
 
         <!-- ===================== Settings Modal ===================== -->
         <div id="settings-modal" class="absolute inset-0 bg-slate-900-40 backdrop-blur-sm flex items-center justify-center z-50 p-4 fade-in hidden" style="border-radius: 20px;">
-            <!-- 수정됨: 모달창 높이와 너비를 키워 여백을 넉넉하게 확보 -->
+            
+            <!-- 모달창 크기 -->
             <div class="bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-slate-200" style="width: 960px; height: 620px;">
                 
                 <!-- Modal Header -->
@@ -400,39 +501,100 @@
                 <!-- Modal Body -->
                 <div class="flex flex-1 overflow-hidden bg-slate-50">
                     
-                    <!-- Left Settings Nav -->
-                    <div class="settings-sidebar">
+                    <!-- Left Settings Nav (Accordion Style) -->
+                    <div class="settings-sidebar custom-scrollbar">
                         <div class="sidebar-heading">글로벌</div>
-                        <button class="side-nav-item active" onclick="switchSettingTab('common', this)">
+                        <!-- 공통설정 (단일메뉴) -->
+                        <button class="side-nav-item active" id="btn-common" onclick="switchSettingTab('common', 'common', this)">
                             <div class="nav-icon bg-blue-100 text-blue-600"><i data-lucide="server" style="width:14px;height:14px;"></i></div>
                             <span class="font-semibold" style="font-size: 12px;">공통 환경설정</span>
                         </button>
                         
                         <div class="sidebar-heading" style="margin-top: 16px;">개별 모듈</div>
-                        <button class="side-nav-item" onclick="switchSettingTab('crm', this)">
-                            <div class="nav-icon"><i data-lucide="user" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftCRM</span>
-                        </button>
-                        <button class="side-nav-item" onclick="switchSettingTab('cti', this)">
-                            <div class="nav-icon"><i data-lucide="phone" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftCTI</span>
-                        </button>
-                        <button class="side-nav-item" onclick="switchSettingTab('front', this)">
-                            <div class="nav-icon"><i data-lucide="monitor" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftFront</span>
-                        </button>
-                        <button class="side-nav-item" onclick="switchSettingTab('position', this)">
-                            <div class="nav-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftPosition</span>
-                        </button>
-                        <button class="side-nav-item" onclick="switchSettingTab('tele', this)">
-                            <div class="nav-icon"><i data-lucide="headphones" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftTelemanager</span>
-                        </button>
-                        <button class="side-nav-item" onclick="switchSettingTab('trace', this)">
-                            <div class="nav-icon"><i data-lucide="activity" style="width:14px;height:14px;"></i></div>
-                            <span class="font-semibold" style="font-size: 12px;">SoftTrace</span>
-                        </button>
+                        
+                        <!-- SoftCRM 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-crm" onclick="toggleAccordion('crm', 'crm-1')">
+                                <div class="nav-icon"><i data-lucide="user" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftCRM</span>
+                                <i data-lucide="chevron-down" id="chevron-crm" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-crm" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('crm', 'crm-1', this)">기본설정</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('crm', 'crm-2', this)">신용카드</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('crm', 'crm-3', this)">스마트문진</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('crm', 'crm-4', this)">기타설정</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('crm', 'crm-5', this)">인쇄양식</button>
+                            </div>
+                        </div>
+
+                        <!-- SoftCTI 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-cti" onclick="toggleAccordion('cti', 'cti-1')">
+                                <div class="nav-icon"><i data-lucide="phone" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftCTI</span>
+                                <i data-lucide="chevron-down" id="chevron-cti" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-cti" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('cti', 'cti-1', this)">일반 옵션</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('cti', 'cti-2', this)">PBX 연동</button>
+                            </div>
+                        </div>
+
+                        <!-- SoftFront 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-front" onclick="toggleAccordion('front', 'front-1')">
+                                <div class="nav-icon"><i data-lucide="monitor" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftFront</span>
+                                <i data-lucide="chevron-down" id="chevron-front" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-front" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('front', 'front-1', this)">기본 및 프린터</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('front', 'front-2', this)">장비연동</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('front', 'front-3', this)">화면표시</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('front', 'front-4', this)">외부연동</button>
+                            </div>
+                        </div>
+
+                        <!-- SoftPosition 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-pos" onclick="toggleAccordion('pos', 'pos-1')">
+                                <div class="nav-icon"><i data-lucide="map-pin" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftPosition</span>
+                                <i data-lucide="chevron-down" id="chevron-pos" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-pos" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('pos', 'pos-1', this)">기본 및 외부연동</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('pos', 'pos-2', this)">리더기 설정</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('pos', 'pos-3', this)">장비연동/TTS</button>
+                            </div>
+                        </div>
+
+                        <!-- SoftTelemanager 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-tele" onclick="toggleAccordion('tele', 'tele-1')">
+                                <div class="nav-icon"><i data-lucide="headphones" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftTelemanager</span>
+                                <i data-lucide="chevron-down" id="chevron-tele" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-tele" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('tele', 'tele-1', this)">웹서버</button>
+                            </div>
+                        </div>
+
+                        <!-- SoftTrace 아코디언 -->
+                        <div class="accordion-group">
+                            <button class="side-nav-item" id="acc-btn-trace" onclick="toggleAccordion('trace', 'trace-1')">
+                                <div class="nav-icon"><i data-lucide="activity" style="width:14px;height:14px;"></i></div>
+                                <span class="font-semibold" style="font-size: 12px;">SoftTrace</span>
+                                <i data-lucide="chevron-down" id="chevron-trace" class="ml-auto text-slate-400 transition-transform" style="width:16px;height:16px;"></i>
+                            </button>
+                            <div id="acc-body-trace" class="accordion-body hidden flex-col py-1">
+                                <button class="sub-nav-item" onclick="switchSettingTab('trace', 'trace-1', this)">진료설정</button>
+                                <button class="sub-nav-item" onclick="switchSettingTab('trace', 'trace-2', this)">고객뷰어</button>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Right Settings Content -->
@@ -444,19 +606,21 @@
                         
                         <div class="flex-1 overflow-hidden relative">
                             
-                            <!-- Tab: Common -->
+                            <!-- ============================================== -->
+                            <!-- 1. Tab: Common                                 -->
+                            <!-- ============================================== -->
                             <div id="tab-common" class="setting-panel fade-in h-full overflow-y-auto pr-2 custom-scrollbar flex flex-col gap-4">
                                 <div class="modern-card">
                                     <div class="flex items-center gap-2 mb-3">
                                         <div class="bg-blue-100 p-1.5 rounded-md"><i data-lucide="database" class="text-blue-600" style="width:16px;height:16px;"></i></div>
                                         <h4 class="font-bold text-slate-800" style="font-size: 14px;">통합 데이터베이스 연결</h4>
                                     </div>
-                                    <div class="grid grid-cols-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
+                                    <div class="grid-2 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-100 mb-4">
                                         <div class="form-group m-0"><label>IP Address <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="192.168.0.100" /></div>
                                         <div class="form-group m-0"><label>Port <span class="text-rose-500">*</span></label><div class="flex gap-1"><input type="text" class="modern-input flex-1" value="24680" /><button class="modern-btn-outline px-2 text-xs">기본</button></div></div>
                                         <div class="form-group m-0"><label>DB Name <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="SoftCRM_Vryus" /></div>
                                         <div class="form-group m-0"><label>User ID <span class="text-rose-500">*</span></label><input type="text" class="modern-input" value="sungmin" /></div>
-                                        <div class="form-group m-0 col-span-2"><label>Password <span class="text-rose-500">*</span></label><input type="password" class="modern-input" value="********" /></div>
+                                        <div class="form-group m-0 col-span-2" style="grid-column: span 2;"><label>Password <span class="text-rose-500">*</span></label><input type="password" class="modern-input" value="********" /></div>
                                     </div>
                                     <div class="form-group">
                                         <label class="mb-2 text-xs">DBMS 엔진 타입</label>
@@ -471,15 +635,12 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftCRM -->
+                            <!-- ============================================== -->
+                            <!-- 2. Tab: SoftCRM                                -->
+                            <!-- ============================================== -->
                             <div id="tab-crm" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'crm-1')">기본설정</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'crm-2')">신용카드</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'crm-3')">기타설정</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="crm-1" class="sub-panel grid-2">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="crm-1" class="sub-panel grid-2 hidden">
                                         <div class="modern-card">
                                             <h4 class="card-title">포트 통신 설정</h4>
                                             <div class="form-group"><label>메세지센터 IP</label><input type="text" class="modern-input" placeholder="192.168.0.1" /></div>
@@ -518,7 +679,22 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div id="crm-3" class="sub-panel hidden grid-2">
+                                    <div id="crm-3" class="sub-panel hidden">
+                                        <div class="modern-card">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="monitor-smartphone" class="text-blue-500" style="width:16px;height:16px;"></i> 스마트문진 IP 등록 리스트</h4>
+                                            <div class="rounded-lg border border-slate-200 overflow-hidden h-40 overflow-y-auto">
+                                                <table class="modern-table text-xs">
+                                                    <thead class="sticky top-0 z-10"><tr><th class="w-16 text-center py-2">번호</th><th class="py-2">접속 허용 IP 주소</th></tr></thead>
+                                                    <tbody>
+                                                        <tr><td class="text-center font-semibold text-slate-400 py-1">1</td><td class="py-1"><input type="text" class="w-full bg-transparent border-none outline-none focus:ring-0 px-2 py-1 text-slate-700 text-xs" placeholder="IP 주소 입력" /></td></tr>
+                                                        <tr><td class="text-center font-semibold text-slate-400 py-1">2</td><td class="py-1"><input type="text" class="w-full bg-transparent border-none outline-none focus:ring-0 px-2 py-1 text-slate-700 text-xs" placeholder="IP 주소 입력" /></td></tr>
+                                                        <tr><td class="text-center font-semibold text-slate-400 py-1">3</td><td class="py-1"><input type="text" class="w-full bg-transparent border-none outline-none focus:ring-0 px-2 py-1 text-slate-700 text-xs" placeholder="IP 주소 입력" /></td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="crm-4" class="sub-panel hidden grid-2">
                                         <div class="modern-card">
                                             <h4 class="card-title">예약 및 디스플레이</h4>
                                             <div class="grid-2">
@@ -528,17 +704,24 @@
                                             <label class="checkbox-label mt-2"><input type="checkbox" checked /> 예약창 클릭 시 상세정보</label>
                                         </div>
                                     </div>
+                                    <div id="crm-5" class="sub-panel hidden">
+                                        <div class="modern-card">
+                                            <h4 class="card-title flex items-center gap-2"><i data-lucide="printer" class="text-blue-500" style="width:16px;height:16px;"></i> QR 및 라벨 출력 양식</h4>
+                                            <div class="flex gap-2 items-end bg-slate-50 p-3 rounded-xl">
+                                                <div class="form-group flex-1 m-0"><label>지정 프린터</label><select class="modern-input"><option>선택해주세요</option></select></div>
+                                                <button class="modern-btn-outline"><i data-lucide="monitor" style="width:14px;height:14px;"></i> 양식 미리보기</button>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftCTI -->
+                            <!-- ============================================== -->
+                            <!-- 3. Tab: SoftCTI                                -->
+                            <!-- ============================================== -->
                             <div id="tab-cti" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'cti-1')">일반 옵션</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'cti-2')">PBX 연동</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="cti-1" class="sub-panel flex flex-col gap-4">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="cti-1" class="sub-panel hidden flex flex-col gap-4">
                                         <div class="modern-card">
                                             <h4 class="card-title">콜센터 PBX 장비 선택</h4>
                                             <div class="grid grid-cols-2 gap-2">
@@ -562,16 +745,12 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftFront -->
+                            <!-- ============================================== -->
+                            <!-- 4. Tab: SoftFront                              -->
+                            <!-- ============================================== -->
                             <div id="tab-front" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'front-1')">기본 및 프린터</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-2')">장비연동</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-3')">화면표시</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'front-4')">외부연동</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="front-1" class="sub-panel grid-2">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="front-1" class="sub-panel hidden grid-2">
                                         <div class="modern-card h-fit">
                                             <h4 class="card-title flex items-center gap-2"><i data-lucide="printer" class="text-indigo-500" style="width:16px;height:16px;"></i> 프린터 설정</h4>
                                             <div class="form-group mb-0">
@@ -685,15 +864,12 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftPosition -->
-                            <div id="tab-position" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'pos-1')">기본 및 외부연동</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'pos-2')">리더기 설정</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'pos-3')">장비연동/TTS</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="pos-1" class="sub-panel grid-2">
+                            <!-- ============================================== -->
+                            <!-- 5. Tab: SoftPosition                           -->
+                            <!-- ============================================== -->
+                            <div id="tab-pos" class="setting-panel hidden h-full flex-col">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="pos-1" class="sub-panel hidden grid-2">
                                         <div class="modern-card h-fit">
                                             <h4 class="card-title flex items-center gap-2"><i data-lucide="settings" class="text-rose-500" style="width:16px;height:16px;"></i> 기본 통신 설정</h4>
                                             <div class="grid-2 gap-3 mb-4">
@@ -757,13 +933,12 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftTelemanager -->
+                            <!-- ============================================== -->
+                            <!-- 6. Tab: SoftTelemanager                        -->
+                            <!-- ============================================== -->
                             <div id="tab-tele" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'tele-1')">웹서버</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="tele-1" class="sub-panel">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="tele-1" class="sub-panel hidden">
                                         <div class="modern-card" style="max-width: 500px;">
                                             <h4 class="card-title flex items-center gap-2"><i data-lucide="server" class="text-amber-500" style="width:16px;height:16px;"></i> 웹서버 연결 설정</h4>
                                             <div class="grid-2">
@@ -781,14 +956,12 @@
                                 </div>
                             </div>
 
-                            <!-- Tab: SoftTrace -->
+                            <!-- ============================================== -->
+                            <!-- 7. Tab: SoftTrace                              -->
+                            <!-- ============================================== -->
                             <div id="tab-trace" class="setting-panel hidden h-full flex-col">
-                                <div class="modern-tabs">
-                                    <button class="modern-tab active" onclick="switchSubTab(this, 'trace-1')">진료설정</button>
-                                    <button class="modern-tab" onclick="switchSubTab(this, 'trace-2')">고객뷰어</button>
-                                </div>
-                                <div class="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
-                                    <div id="trace-1" class="sub-panel">
+                                <div class="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div id="trace-1" class="sub-panel hidden">
                                         <div class="modern-card" style="max-width: 400px;">
                                             <h4 class="card-title flex items-center gap-2"><i data-lucide="activity" class="text-teal-500" style="width:16px;height:16px;"></i> 진료 항목 표시 설정</h4>
                                             <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 flex flex-col gap-3">
@@ -821,7 +994,6 @@
                 </div>
 
                 <!-- Modal Footer -->
-                <!-- 수정됨: 하단 여백 및 디스크(저장) 아이콘 흰색 강제 적용 -->
                 <div class="flex items-center justify-end bg-white border-t border-slate-100 shrink-0 gap-3" style="padding: 16px 24px;">
                     <button class="modern-btn-outline" onclick="toggleSettings(false)">취소</button>
                     <button class="modern-btn-primary shadow-md px-8" onclick="toggleSettings(false)">
@@ -877,6 +1049,7 @@
             
             // Close warning if open
             closeWarning();
+            closeUnregisteredWarning();
             
         }, 800);
     });
@@ -891,14 +1064,47 @@
         document.getElementById('profile-view').classList.add('hidden');
     });
 
-    // Launch App Logic
-    function launchApp(appName) {
+    // Launch App Logic (설치 상태 분기 처리)
+    function launchApp(appName, state, el) {
         if (!isLoggedIn) {
             document.getElementById('login-warning').classList.remove('hidden');
             setTimeout(closeWarning, 2500);
             return;
         }
+
+        if (state === 'unregistered') {
+            document.getElementById('unregistered-warning').classList.remove('hidden');
+            setTimeout(closeUnregisteredWarning, 2500);
+            return;
+        }
+
+        if (state === 'uninstalled') {
+            const overlay = document.getElementById('install-overlay');
+            document.getElementById('install-app-name').innerText = appName + ' 모듈 설치 중';
+            overlay.classList.remove('hidden');
+            overlay.style.display = 'flex';
+            
+            // Re-trigger progress bar animation
+            const bar = overlay.querySelector('.progress-bar-fill');
+            bar.style.animation = 'none';
+            void bar.offsetWidth; // trigger reflow
+            bar.style.animation = 'progress 2s ease-in-out forwards';
+
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                overlay.style.display = 'none';
+                
+                // 모듈 카드 상태를 '설치'로 영구 업데이트
+                el.classList.remove('uninstalled');
+                const badge = el.querySelector('.app-badge');
+                badge.className = 'app-badge badge-installed';
+                badge.innerText = '설치';
+                el.setAttribute('onclick', `launchApp('${appName}', 'installed', this)`);
+            }, 2000);
+            return;
+        }
         
+        // Installed State (실행)
         const overlay = document.getElementById('launch-overlay');
         document.getElementById('launch-app-name').innerText = appName + ' 모듈 실행 중...';
         overlay.classList.remove('hidden');
@@ -914,6 +1120,10 @@
         document.getElementById('login-warning').classList.add('hidden');
     }
 
+    function closeUnregisteredWarning() {
+        document.getElementById('unregistered-warning').classList.add('hidden');
+    }
+
     // Settings Modal Logic
     function toggleSettings(show) {
         const modal = document.getElementById('settings-modal');
@@ -925,54 +1135,104 @@
     }
     document.getElementById('btn-open-settings').addEventListener('click', () => toggleSettings(true));
 
-    // Settings Tab Switching
-    function switchSettingTab(tabId, btnElement) {
-        // Update Sidebar styling
-        document.querySelectorAll('.side-nav-item').forEach(el => {
-            el.classList.remove('active');
-            el.querySelector('.nav-icon').classList.remove('bg-blue-100', 'text-blue-600');
-            el.querySelector('.nav-icon').classList.add('bg-slate-100', 'text-slate-500');
-        });
-        btnElement.classList.add('active');
-        btnElement.querySelector('.nav-icon').classList.remove('bg-slate-100', 'text-slate-500');
-        btnElement.querySelector('.nav-icon').classList.add('bg-blue-100', 'text-blue-600');
-
-        // Update Title & Badge
-        document.getElementById('setting-content-title').innerText = btnElement.querySelector('span').innerText;
-        const badge = document.getElementById('setting-content-badge');
-        if (tabId === 'common') badge.classList.add('hidden');
-        else badge.classList.remove('hidden');
-
-        // Hide all panels
-        document.querySelectorAll('.setting-panel').forEach(panel => panel.classList.add('hidden'));
+    // Accordion Toggle
+    function toggleAccordion(moduleId, firstSubId) {
+        const body = document.getElementById(`acc-body-${moduleId}`);
+        const chevron = document.getElementById(`chevron-${moduleId}`);
+        const isHidden = body.classList.contains('hidden');
         
-        // Show selected panel
-        const targetPanel = document.getElementById(`tab-${tabId}`);
-        if (targetPanel) {
-            targetPanel.classList.remove('hidden');
-            targetPanel.style.display = 'flex';
+        if (isHidden) {
+            // Expand
+            body.classList.remove('hidden');
+            body.style.display = 'flex';
+            chevron.style.transform = 'rotate(180deg)';
+            
+            // Automatically select the first child if none is active
+            const activeSub = body.querySelector('.sub-nav-item.active');
+            if (!activeSub) {
+                const firstBtn = body.querySelector('.sub-nav-item');
+                if (firstBtn) switchSettingTab(moduleId, firstSubId, firstBtn);
+            }
+        } else {
+            // Collapse
+            body.classList.add('hidden');
+            body.style.display = 'none';
+            chevron.style.transform = 'rotate(0deg)';
         }
     }
 
-    // Sub Tab Switching
-    function switchSubTab(btnElement, targetId) {
-        const parent = btnElement.parentElement;
-        parent.querySelectorAll('.modern-tab').forEach(btn => btn.classList.remove('active'));
-        btnElement.classList.add('active');
-
-        const container = parent.nextElementSibling;
-        container.querySelectorAll('.sub-panel').forEach(panel => {
-            panel.classList.add('hidden');
-            panel.style.display = ''; // Reset inline display
+    // Settings Tab Switching
+    function switchSettingTab(moduleId, subId, btnElement) {
+        // 1. Reset all active states in sidebar
+        document.querySelectorAll('.side-nav-item').forEach(el => {
+            el.classList.remove('active');
+            const icon = el.querySelector('.nav-icon');
+            if(icon) {
+                icon.classList.remove('bg-blue-100', 'text-blue-600');
+                icon.classList.add('bg-slate-100', 'text-slate-500');
+            }
         });
+        document.querySelectorAll('.sub-nav-item').forEach(el => {
+            el.classList.remove('active');
+        });
+
+        // 2. Set active state
+        if (btnElement.classList.contains('sub-nav-item')) {
+            btnElement.classList.add('active');
+            // Highlight parent accordion header
+            const parentHeader = document.getElementById(`acc-btn-${moduleId}`);
+            if (parentHeader) {
+                parentHeader.classList.add('active');
+                const icon = parentHeader.querySelector('.nav-icon');
+                if(icon) {
+                    icon.classList.remove('bg-slate-100', 'text-slate-500');
+                    icon.classList.add('bg-blue-100', 'text-blue-600');
+                }
+            }
+        } else {
+            // It's the Common setting (no accordion)
+            btnElement.classList.add('active');
+            const icon = btnElement.querySelector('.nav-icon');
+            if(icon) {
+                icon.classList.remove('bg-slate-100', 'text-slate-500');
+                icon.classList.add('bg-blue-100', 'text-blue-600');
+            }
+        }
+
+        // 3. Update Title & Badge
+        let titleText = btnElement.innerText;
+        if (btnElement.classList.contains('sub-nav-item')) {
+            const parentName = document.getElementById(`acc-btn-${moduleId}`).querySelector('span').innerText;
+            titleText = `${parentName} > ${titleText}`;
+        }
+        document.getElementById('setting-content-title').innerText = titleText;
         
-        const target = document.getElementById(targetId);
-        if(target) {
-            target.classList.remove('hidden');
-            if(target.classList.contains('grid-2')) {
-                target.style.display = 'grid';
-            } else if (!target.classList.contains('flex') && !target.classList.contains('flex-col')) {
-                 target.style.display = 'block';
+        const badge = document.getElementById('setting-content-badge');
+        if (moduleId === 'common') badge.classList.add('hidden');
+        else badge.classList.remove('hidden');
+
+        // 4. Show corresponding panel and sub-panel
+        document.querySelectorAll('.setting-panel').forEach(panel => panel.classList.add('hidden'));
+        
+        const targetPanel = document.getElementById(`tab-${moduleId}`);
+        if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+            targetPanel.style.display = 'flex';
+            
+            // Hide all sub-panels inside this panel
+            targetPanel.querySelectorAll('.sub-panel').forEach(sub => {
+                sub.classList.add('hidden');
+                sub.style.display = 'none';
+            });
+            
+            // Show target sub-panel
+            if (subId !== 'common') {
+                const targetSub = document.getElementById(subId);
+                if (targetSub) {
+                    targetSub.classList.remove('hidden');
+                    if(targetSub.classList.contains('grid-2')) targetSub.style.display = 'grid';
+                    else targetSub.style.display = 'block';
+                }
             }
         }
     }
